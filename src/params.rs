@@ -42,6 +42,19 @@ impl Params {
         self
     }
 
+    /// 设置关联数组参数 `key[name]=value`。
+    pub fn map<K, V>(mut self, key: &str, entries: &[(K, V)]) -> Self
+    where
+        K: ToString,
+        V: ToString,
+    {
+        for (name, value) in entries {
+            self.pairs
+                .push((format!("{key}[{}]", name.to_string()), value.to_string()));
+        }
+        self
+    }
+
     pub fn pairs(&self) -> &[(String, String)] {
         &self.pairs
     }
@@ -66,7 +79,8 @@ mod tests {
             .opt("pagesize", Some(10))
             .flag("isuid", true)
             .flag("nolog", false)
-            .list("pmids", [1, 2]);
+            .list("pmids", [1, 2])
+            .map("nums", &[(3, 5)]);
         let pairs: Vec<(&str, &str)> = params
             .pairs()
             .iter()
@@ -80,6 +94,7 @@ mod tests {
                 ("isuid", "1"),
                 ("pmids[]", "1"),
                 ("pmids[]", "2"),
+                ("nums[3]", "5"),
             ]
         );
     }

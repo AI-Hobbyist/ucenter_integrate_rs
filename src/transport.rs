@@ -60,6 +60,36 @@ impl Transport {
         self.tokens.get(|| self.request_token()).await
     }
 
+    /// UCenter 站点根地址（去掉 `/api/index.php`），用于公开页面如 `avatar.php`。
+    pub fn site_root(&self) -> &str {
+        self.endpoint
+            .strip_suffix("/api/index.php")
+            .unwrap_or(&self.endpoint)
+    }
+
+    /// 不签名的 GET 请求（公开页面），跟随跳转，返回响应头与正文。
+    pub async fn get_public(&self, url: &str) -> Result<(reqwest::header::HeaderMap, Vec<u8>)> {
+        let resp = self
+            .http
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| UcenterError::Http(format!("请求 UCenter 失败: {e}")))?;
+        let status = resp.status();
+        if !status.is_success() {
+            return Err(UcenterError::Http(format!(
+                "UCenter 返回 HTTP {}",
+                status.as_u16()
+            )));
+        }
+        let headers = resp.headers().clone();
+        let bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| UcenterError::Http(format!("读取 UCenter 响应失败: {e}")))?;
+        Ok((headers, bytes.to_vec()))
+    }
+
     async fn request_token(&self) -> Result<TokenInfo> {
         let headers = build_headers(&self.app_id, &self.secret, None)?;
         let body = self.post("/token", headers, &Params::new()).await?;

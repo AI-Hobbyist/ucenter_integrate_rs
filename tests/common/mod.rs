@@ -3,9 +3,10 @@
 #![allow(dead_code)]
 
 use axum::Router;
-use axum::extract::{Form, RawQuery, State};
+use axum::extract::{Form, Query, RawQuery, State};
 use axum::http::HeaderMap;
-use axum::routing::post;
+use axum::response::IntoResponse;
+use axum::routing::{get, post};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -37,6 +38,7 @@ impl MockUc {
         let state = Arc::new(MockState::default());
         let app = Router::new()
             .route("/api/index.php", post(handle))
+            .route("/avatar.php", get(avatar))
             .with_state(state.clone());
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -154,4 +156,20 @@ async fn handle(
         Some(handler) => handler(&form),
         None => r#"{"ret":-114,"msg":"initParam: api is invalid"}"#.to_string(),
     }
+}
+
+/// 模拟头像 UID。
+pub const AVATAR_UID: &str = "7";
+pub const AVATAR_BYTES: &[u8] = b"\x89PNG-avatar";
+
+/// 模拟 `avatar.php`：仅 UID 7 有头像。
+async fn avatar(Query(q): Query<HashMap<String, String>>) -> axum::response::Response {
+    let has_avatar = q.get("uid").map(String::as_str) == Some(AVATAR_UID);
+    if q.contains_key("check_file_exists") {
+        return (if has_avatar { "1" } else { "0" }).into_response();
+    }
+    if !has_avatar {
+        return ([("content-type", "image/svg+xml")], "<svg/>").into_response();
+    }
+    ([("content-type", "image/png")], AVATAR_BYTES).into_response()
 }

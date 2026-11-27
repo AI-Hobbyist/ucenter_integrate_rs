@@ -1,5 +1,15 @@
 //! 客户端入口。按模块分组提供接口，另有通用 `call` 调用任意已授权动作。
 
+use crate::api::app::SystemApi;
+use crate::api::authorize::AuthorizeApi;
+use crate::api::avatar::AvatarApi;
+use crate::api::credit::CreditApi;
+use crate::api::feed::FeedApi;
+use crate::api::friend::FriendApi;
+use crate::api::mail::MailApi;
+use crate::api::pm::PmApi;
+use crate::api::tag::TagApi;
+use crate::api::user::UserApi;
 use crate::config::UcenterConfig;
 use crate::error::Result;
 use crate::params::Params;
@@ -39,7 +49,44 @@ impl UcenterClient {
         self.transport.call(action, &params).await
     }
 
-    pub(crate) fn transport(&self) -> &Transport {
-        &self.transport
+    pub fn user(&self) -> UserApi<'_> {
+        UserApi { t: &self.transport }
+    }
+
+    pub fn authorize(&self) -> AuthorizeApi<'_> {
+        AuthorizeApi { t: &self.transport }
+    }
+
+    pub fn avatar(&self) -> AvatarApi<'_> {
+        AvatarApi { t: &self.transport }
+    }
+
+    pub fn pm(&self) -> PmApi<'_> {
+        PmApi { t: &self.transport }
+    }
+
+    pub fn friend(&self) -> FriendApi<'_> {
+        FriendApi { t: &self.transport }
+    }
+
+    pub fn credit(&self) -> CreditApi<'_> {
+        CreditApi { t: &self.transport }
+    }
+
+    pub fn feed(&self) -> FeedApi<'_> {
+        FeedApi { t: &self.transport }
+    }
+
+    pub fn mail(&self) -> MailApi<'_> {
+        MailApi { t: &self.transport }
+    }
+
+    pub fn tag(&self) -> TagApi<'_> {
+        TagApi { t: &self.transport }
+    }
+
+    /// 应用列表、域名列表与版本信息。
+    pub fn system(&self) -> SystemApi<'_> {
+        SystemApi { t: &self.transport }
     }
 }
